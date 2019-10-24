@@ -23,6 +23,7 @@ class WS:
         self.master.configure(background="gray")
         self.master.geometry("900x1000")
         self.data = WeatherDataFromInternet()
+        self.file = WeatherDataFiles()
         self.create_widgets()
 
     def run(self):
@@ -56,7 +57,7 @@ class WS:
         self.history_button.grid(row=8, column=3, columnspan=4)
 
     def draw_dropdown(self):
-        regions = [
+        self.regions = [
             "Venlo",
             "Arnhem",
             "Berkhout",
@@ -115,7 +116,6 @@ class WS:
         def callback(*args):
             station = self.data.get_station_data(self.selectedRegion.get())
             self.set_location_variables(station.weatherDescription, station.visibility, station.temperature, station.airPressure, station.sunPower, station.rainLastHour, station.windDirection, station.windSpeed, station.windGusts)
-            self.file = WeatherDataFiles()
             self.file.write_data(station)
             self.draw_airpressure_temp_chart()
 
@@ -123,7 +123,7 @@ class WS:
         self.selectedRegion.set("Choose a location")
         self.selectedRegion.trace("w", callback)
         self.dropDown = ttk.Combobox(
-            self.master, textvariable=self.selectedRegion, values=regions, font=("Helvetica", 16)
+            self.master, textvariable=self.selectedRegion, values=self.regions, font=("Helvetica", 16)
         )
         self.dropDown.grid(row=1, columnspan=5, pady=5)
 
@@ -171,19 +171,61 @@ class WS:
         self.toolbar.update()
 
     def show_history(self):
-        chartWindow = Toplevel(self.master)
-        chartWindow.title("Data")
+        self.chartWindow = Toplevel(self.master)
+        self.chartWindow.title("Archived Data")
+        pullDataTemp = {}
+        pullDataAirPressure = {}
+        pullDataRain = {}
+        pullDataSun = {}
+        pullDataWind = {}
+
+        def callback(*args):
+            print(selectedRegion.get())
+            records = self.file.read_data(selectedRegion.get())
+            if records == None:
+                print("No available archieves")
+                return
+            for record in records:
+                pullDataTemp[record.timeStamp] = record.temperature
+                pullDataAirPressure[record.timeStamp] = record.airPressure
+                pullDataRain[record.timeStamp] = record.rainLastHour
+                pullDataSun[record.timeStamp] = record.sunPower
+                pullDataWind[record.timeStamp] = record.windSpeed
+            self.history_temp_chart.clear()
+            self.history_air_chart.clear()
+            self.history_rain_chart.clear()
+            self.history_sun_chart.clear()
+            self.history_wind_chart.clear()
+            self.history_temp_chart.plot(list(pullDataTemp.keys()), list(pullDataTemp.values()))
+            self.history_air_chart.plot(
+                list(pullDataAirPressure.keys()), list(pullDataAirPressure.values())
+            )
+            self.history_rain_chart.plot(list(pullDataRain.keys()), list(pullDataRain.values()))
+            self.history_sun_chart.plot(
+                list(pullDataSun.keys()), list(pullDataSun.values())
+            )
+            self.history_wind_chart.plot(list(pullDataWind.keys()), list(pullDataWind.values()))
+            canvas.draw()
+
+        selectedRegion = StringVar(self.chartWindow)
+        selectedRegion.set("Choose a location")
+        selectedRegion.trace("w", callback)
+        dropDownHistory = ttk.Combobox(
+            master=self.chartWindow, textvariable=selectedRegion, values=self.regions, font=("Helvetica", 16)
+        )
+        dropDownHistory.pack()
+
         self.history_figure = Figure(dpi=100)
         self.history_temp_chart = self.history_figure.add_subplot(421)
         self.history_air_chart = self.history_figure.add_subplot(422)
         self.history_rain_chart = self.history_figure.add_subplot(423)
         self.history_sun_chart = self.history_figure.add_subplot(424)
         self.history_wind_chart = self.history_figure.add_subplot(425)
-        canvas = FigureCanvasTkAgg(self.history_figure, master=chartWindow)
-        canvas.draw()
+        canvas = FigureCanvasTkAgg(self.history_figure, master=self.chartWindow)
+
         canvas.get_tk_widget().pack(fill=BOTH, expand=True)
 
-        toolbar = NavigationToolbar2Tk(canvas, chartWindow)
+        toolbar = NavigationToolbar2Tk(canvas, self.chartWindow)
         toolbar.update()
         toolbar.pack(fill=BOTH, expand=True)
 
