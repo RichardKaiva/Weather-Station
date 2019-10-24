@@ -8,7 +8,7 @@ import matplotlib.animation as animation
 from matplotlib.figure import Figure
 from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
-from tkinter import Tk, Frame, Label, Button, OptionMenu, StringVar, Text, Toplevel, ttk, TOP, BOTH
+from tkinter import Tk, Frame, Label, Button, OptionMenu, StringVar, IntVar, Text, Toplevel, ttk, TOP, BOTH, Scale
 import matplotlib
 
 matplotlib.use("TkAgg")
@@ -114,15 +114,7 @@ class WS:
         # A function called whenever a new location is chosen.
         def callback(*args):
             station = self.data.get_station_data(self.selectedRegion.get())
-            self.description_text["text"] = station.weatherDescription
-            self.visibility_text["text"] = station.visibility
-            self.temperature_text["text"] = station.temperature
-            self.airpressure_text["text"] = station.airPressure
-            self.sunpower_text["text"] = station.sunPower
-            self.rain_text["text"] = station.rainLastHour
-            self.winddirection_text["text"] = station.windDirection
-            self.windspeed_text["text"] = station.windSpeed
-            self.windgusts_text["text"] = station.windGusts
+            self.set_location_variables(station.weatherDescription, station.visibility, station.temperature, station.airPressure, station.sunPower, station.rainLastHour, station.windDirection, station.windSpeed, station.windGusts)
             self.file = WeatherDataFiles()
             self.file.write_data(station)
             self.draw_airpressure_temp_chart()
@@ -223,6 +215,20 @@ class WS:
         self.mostwindy_text.grid(row=3, column=4)
 
     def draw_selected_location_part(self):
+
+        self.scheduled_job = None
+        def update_time_interval():
+            self.data.update()
+            station = self.data.get_station_data(self.selectedRegion.get())
+            self.set_overview_variables(self.data.find_warmest(), self.data.find_coldest(), self.data.find_sunniest(), self.data.find_least_windy(), self.data.find_most_windy())
+            self.set_location_variables(station.weatherDescription, station.visibility, station.temperature, station.airPressure, station.sunPower, station.rainLastHour, station.windDirection, station.windSpeed, station.windGusts)
+            print("here")
+            self.time_interval = IntVar(self.master)
+            self.time_interval.set(self.interval_scale.get())
+            if self.scheduled_job != None:
+                self.master.after_cancel(self.scheduled_job)
+            self.scheduled_job = self.master.after(self.time_interval.get() * 1000 * 60, update_time_interval)
+
         label6 = Label(self.master, text="Description: ", height=2, width=24)
         label7 = Label(self.master, text="Visibility:", height=2, width=24)
         label8 = Label(self.master, text="Temperature:", height=2, width=24)
@@ -242,6 +248,11 @@ class WS:
         self.winddirection_text = Label(self.master, height=2, width=24)
         self.windspeed_text = Label(self.master, height=2, width=24)
         self.windgusts_text = Label(self.master, height=2, width=24)
+
+        self.interval_scale = Scale(self.master, orient="horizontal", from_=10, to=60, resolution=10, sliderlength=20, label="Interval (min)")
+        self.interval_button = Button(self.master, text="Change update interval", command=update_time_interval)
+        self.interval_button.grid(row=9, column=2)
+        self.interval_scale.grid(row=7, column=2, rowspan=2)
 
         label6.grid(row=4, column=0, pady=(64, 0))
         label7.grid(row=5, column=0)
@@ -277,6 +288,7 @@ class WS:
         self.visibility_text["text"] = visibility
         self.temperature_text["text"] = temp
         self.airpressure_text["text"] = airpressure
+        self.sunpower_text["text"] = sunpower
         self.rain_text["text"] = rain
         self.winddirection_text["text"] = winddirection
         self.windspeed_text["text"] = windspeed

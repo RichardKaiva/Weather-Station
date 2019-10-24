@@ -7,15 +7,25 @@ import json
 
 class WeatherDataFromInternet:
     def __init__(self):
-        self.response = None
+        self.jsonData = None
         self.stations = None
-        self.url = urllib.request.urlopen("https://data.buienradar.nl/2.0/feed/json")
-        if self.url.getcode() == 200:
-            data = self.url.read()
-            self.response = json.loads(data)
-            self.stations = self.response["actual"]["stationmeasurements"]
+        self.url = "https://data.buienradar.nl/2.0/feed/json"
+        self.response = urllib.request.urlopen(self.url)
+        if self.response.getcode() == 200:
+            data = self.response.read()
+            self.jsonData = json.loads(data)
+            self.stations = self.jsonData["actual"]["stationmeasurements"]
         else:
-            print("Error receiving data", self.url.getcode())
+            print("Error receiving data", self.response.getcode())
+
+    def update(self):
+        self.response = urllib.request.urlopen(self.url)
+        if self.response.getcode() == 200:
+            data = self.response.read()
+            self.jsonData = json.loads(data)
+            self.stations = self.jsonData["actual"]["stationmeasurements"]
+        else:
+            print("Error receiving data", self.response.getcode())
 
     def get_station_data(self, region):
         for station in self.stations:
