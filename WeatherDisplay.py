@@ -130,8 +130,12 @@ class WS:
     def draw_airpressure_temp_chart(self):
         self.pullDataTemp = {}
         self.pullDataAirPressure = {}
-
+        
         def animate(i):
+            self.data.update()
+            station = self.data.get_station_data(self.selectedRegion.get())
+            self.file.write_data(station)
+            
             records = self.file.read_data(self.selectedRegion.get())
             if records == None:
                 return
@@ -153,7 +157,7 @@ class WS:
         self.chartTemp = self.f.add_subplot(211)
         self.chartAirPressure = self.f.add_subplot(212)
         self.canvas = FigureCanvasTkAgg(self.f, self.master)
-        ani = animation.FuncAnimation(self.f, animate, interval=5000)
+        ani = animation.FuncAnimation(self.f, animate, interval=1000*60*10)
         self.canvas.draw()
         self.canvas.get_tk_widget().grid(row=14, rowspan=5, column=1, columnspan=4, pady=(16, 0))
 
