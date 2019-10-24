@@ -62,7 +62,7 @@ class WeatherDataFromInternet:
         if sunpower == 0.0:
             return "Het is donker"
         else:
-            return result[0] + ": " + str(result[1])
+            return result[0] + ": " + str(result[1]) + " W/m²"
 
     def find_least_windy(self):
         windspeed = 300.0
@@ -71,7 +71,7 @@ class WeatherDataFromInternet:
                 if float(station["windspeed"]) < windspeed:
                     windspeed = float(station["windspeed"])
                     result = [station["regio"], windspeed]
-        return result[0] + ": " + str(result[1])
+        return result[0] + ": " + str(result[1]) + " m/s"
 
     def find_most_windy(self):
         windspeed = 0.0
@@ -80,4 +80,4 @@ class WeatherDataFromInternet:
                 if float(station["windspeed"]) > windspeed:
                     windspeed = float(station["windspeed"])
                     result = [station["regio"], windspeed]
-        return result[0] + ": " + str(result[1])
+        return result[0] + ": " + str(result[1]) + " m/s"

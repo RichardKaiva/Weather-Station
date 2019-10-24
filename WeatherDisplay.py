@@ -199,12 +199,8 @@ class WS:
         self.sunniest_text = Label(self.master, height=2, width=24)
         self.leastwindy_text = Label(self.master, height=2, width=24)
         self.mostwindy_text = Label(self.master, height=2, width=24)
-
-        self.warmest_text["text"] = self.data.find_warmest()
-        self.coldest_text["text"] = self.data.find_coldest()
-        self.sunniest_text["text"] = self.data.find_sunniest()
-        self.leastwindy_text["text"] = self.data.find_least_windy()
-        self.mostwindy_text["text"] = self.data.find_most_windy()
+        
+        self.set_overview_variables(self.data.find_warmest(), self.data.find_coldest(), self.data.find_sunniest(), self.data.find_least_windy(), self.data.find_most_windy())
 
         label1.grid(row=2, column=0)
         label2.grid(row=2, column=1)
@@ -289,11 +285,11 @@ class WS:
         self, description, visibility, temp, airpressure, sunpower, rain, winddirection, windspeed, windgusts
     ):
         self.description_text["text"] = description
-        self.visibility_text["text"] = visibility
-        self.temperature_text["text"] = temp
-        self.airpressure_text["text"] = airpressure
-        self.sunpower_text["text"] = sunpower
-        self.rain_text["text"] = rain
+        self.visibility_text["text"] = "{} km".format(visibility/1000)
+        self.temperature_text["text"] = "{} °C".format(temp)
+        self.airpressure_text["text"] = "{} hPa".format(airpressure)
+        self.sunpower_text["text"] = "{} W/m²".format(sunpower)
+        self.rain_text["text"] = "{} mm".format(rain)
         self.winddirection_text["text"] = winddirection
-        self.windspeed_text["text"] = windspeed
-        self.windgusts_text["text"] = windgusts
+        self.windspeed_text["text"] = "{} m/s".format(windspeed)
+        self.windgusts_text["text"] = "{} m/s".format(windgusts)
