@@ -1,11 +1,11 @@
 from WeatherStation import WeatherStation
 import csv
-
+import os.path
 
 class WeatherDataFiles:
     def write_data(self, WeatherStation):
         try:
-            with open("{}.csv".format(WeatherStation.regionName), "r") as rfile:
+            with open(os.path.join(os.path.join(os.getcwd(), "Archived data"), "{}.csv".format(WeatherStation.regionName)), "r") as rfile:
                 lines = rfile.read().splitlines()
                 lastLine = lines[-1]
                 rfile.close()
@@ -13,7 +13,7 @@ class WeatherDataFiles:
                     return
         except FileNotFoundError:
             pass
-        with open("{}.csv".format(WeatherStation.regionName), "a+", newline="") as wfile:
+        with open(os.path.join(os.path.join(os.getcwd(), "Archived data"), "{}.csv".format(WeatherStation.regionName)), "a+", newline="") as wfile:
             fieldnames = ["timestamp", "temperature", "airPressure", "sunPower", "rainLastHour", "windSpeed"]
             writer = csv.DictWriter(wfile, fieldnames=fieldnames)
             writer.writerow(
@@ -32,7 +32,7 @@ class WeatherDataFiles:
         fieldnames = ["timestamp", "temperature", "airPressure", "sunPower", "rainLastHour", "windSpeed"]
         dataRecords = []
         try:
-            with open("{}.csv".format(stationName), "r") as rfile:
+            with open(os.path.join(os.path.join(os.getcwd(), "Archived data"), "{}.csv".format(stationName)), "r") as rfile:
                 reader = csv.DictReader(rfile, fieldnames=fieldnames)
                 for line in reader:
                     ws = WeatherStation()

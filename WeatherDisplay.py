@@ -21,7 +21,7 @@ class WS:
         self.master = Tk()
         self.master.title("Weather Station")
         self.master.configure(background="gray")
-        self.master.geometry("800x1000")
+        self.master.geometry("900x1000")
         self.data = WeatherDataFromInternet()
         self.create_widgets()
 
