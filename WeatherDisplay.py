@@ -10,6 +10,8 @@ from matplotlib.backend_bases import key_press_handler
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 from tkinter import Tk, Frame, Label, Button, OptionMenu, StringVar, IntVar, Text, Toplevel, ttk, TOP, BOTH, Scale
 import matplotlib
+import traceback
+import sys
 
 matplotlib.use("TkAgg")
 
@@ -27,18 +29,16 @@ class WS:
         self.create_widgets()
 
     def run(self):
-        self.master.mainloop()  # starts/shows the GUI
+        print("Starting the program")
+        self.master.mainloop()  # shows the GUI
 
-    def quit(self, exitCode):
-        self.isRunningFlag = False
+    def quit(self):
+        print("Stoping the program")
         self.master.quit()  # stops mainloop
         if os.name == "nt":
-            self.master.destroy()  # this is necessary on Windows to prevent
-            # Fatal Python Error: PyEval_RestoreThread: NULL tstate
-        # exit(exitCode)
+            self.master.destroy()  # this is necessary on Windows to prevent Fatal Python Error: PyEval_RestoreThread: NULL tstate
 
     def create_widgets(self):
-
         headLabel = Label(self.master, text="Buienradar Desktop", font=("Helvetica", 24))
         headLabel.grid(row=0, columnspan=5, pady=5)
 
@@ -48,13 +48,20 @@ class WS:
 
         self.draw_selected_location_part()
 
+        self.draw_disclamer_part()
+        
+        self.draw_historical_part()
+
+    def draw_historical_part(self):
+        self.history_button = Button(self.master, text="Show Archived Data", command=self.show_history)
+        self.history_button.grid(row=8, column=3, columnspan=4)
+
+    def draw_disclamer_part(self):
         creditsLabel = Label(self.master, text="Created by Richard & Dimitriy", height=2, width=24)
         buienradarLabel = Label(self.master, text="@Buienradar.nl", height=2, width=24)
 
         creditsLabel.grid(row=13, column=0, pady=(16, 0))
         buienradarLabel.grid(row=13, column=3, pady=(16, 0))
-        self.history_button = Button(self.master, text="Show Archived Data", command=self.show_history)
-        self.history_button.grid(row=8, column=3, columnspan=4)
 
     def draw_dropdown(self):
         self.regions = [
@@ -151,13 +158,14 @@ class WS:
                 )
             except ValueError:
                 print("INVALID INPUT: .plot(**kwargs)")
+                traceback.print_exc(limit=1, file=sys.stdout)
                 return
 
         self.f = Figure(figsize=(7, 4), dpi=100)
         self.chartTemp = self.f.add_subplot(211)
         self.chartAirPressure = self.f.add_subplot(212)
         self.canvas = FigureCanvasTkAgg(self.f, self.master)
-        ani = animation.FuncAnimation(self.f, animate, interval=1000*60*10)
+        ani = animation.FuncAnimation(self.f, animate, interval=1000*60*10)     # Object of animation must be created so that it is not garbage collected.
         self.canvas.draw()
         self.canvas.get_tk_widget().grid(row=14, rowspan=5, column=1, columnspan=4, pady=(16, 0))
 
@@ -168,66 +176,7 @@ class WS:
         self.toolbarFrame = Frame(self.master)
         self.toolbarFrame.grid(row=19, column=1, columnspan=4, pady=(4, 0))
         self.toolbar = NavigationToolbar2Tk(self.canvas, self.toolbarFrame)
-        self.toolbar.update()
-
-    def show_history(self):
-        self.chartWindow = Toplevel(self.master)
-        self.chartWindow.title("Archived Data")
-        pullDataTemp = {}
-        pullDataAirPressure = {}
-        pullDataRain = {}
-        pullDataSun = {}
-        pullDataWind = {}
-
-        def callback(*args):
-            print(selectedRegion.get())
-            records = self.file.read_data(selectedRegion.get())
-            if records == None:
-                print("No available archieves")
-                return
-            for record in records:
-                pullDataTemp[record.timeStamp] = record.temperature
-                pullDataAirPressure[record.timeStamp] = record.airPressure
-                pullDataRain[record.timeStamp] = record.rainLastHour
-                pullDataSun[record.timeStamp] = record.sunPower
-                pullDataWind[record.timeStamp] = record.windSpeed
-            self.history_temp_chart.clear()
-            self.history_air_chart.clear()
-            self.history_rain_chart.clear()
-            self.history_sun_chart.clear()
-            self.history_wind_chart.clear()
-            self.history_temp_chart.plot(list(pullDataTemp.keys()), list(pullDataTemp.values()))
-            self.history_air_chart.plot(
-                list(pullDataAirPressure.keys()), list(pullDataAirPressure.values())
-            )
-            self.history_rain_chart.plot(list(pullDataRain.keys()), list(pullDataRain.values()))
-            self.history_sun_chart.plot(
-                list(pullDataSun.keys()), list(pullDataSun.values())
-            )
-            self.history_wind_chart.plot(list(pullDataWind.keys()), list(pullDataWind.values()))
-            canvas.draw()
-
-        selectedRegion = StringVar(self.chartWindow)
-        selectedRegion.set("Choose a location")
-        selectedRegion.trace("w", callback)
-        dropDownHistory = ttk.Combobox(
-            master=self.chartWindow, textvariable=selectedRegion, values=self.regions, font=("Helvetica", 16)
-        )
-        dropDownHistory.pack()
-
-        self.history_figure = Figure(dpi=100)
-        self.history_temp_chart = self.history_figure.add_subplot(421)
-        self.history_air_chart = self.history_figure.add_subplot(422)
-        self.history_rain_chart = self.history_figure.add_subplot(423)
-        self.history_sun_chart = self.history_figure.add_subplot(424)
-        self.history_wind_chart = self.history_figure.add_subplot(425)
-        canvas = FigureCanvasTkAgg(self.history_figure, master=self.chartWindow)
-
-        canvas.get_tk_widget().pack(fill=BOTH, expand=True)
-
-        toolbar = NavigationToolbar2Tk(canvas, self.chartWindow)
-        toolbar.update()
-        toolbar.pack(fill=BOTH, expand=True)
+        self.toolbar.update() 
 
     def draw_overview_part(self):
         label1 = Label(self.master, text="Warmest: ", height=3, width=24)
@@ -264,7 +213,6 @@ class WS:
             station = self.data.get_station_data(self.selectedRegion.get())
             self.set_overview_variables(self.data.find_warmest(), self.data.find_coldest(), self.data.find_sunniest(), self.data.find_least_windy(), self.data.find_most_windy())
             self.set_location_variables(station.weatherDescription, station.visibility, station.temperature, station.airPressure, station.sunPower, station.rainLastHour, station.windDirection, station.windSpeed, station.windGusts)
-            print("here")
             self.time_interval = IntVar(self.master)
             self.time_interval.set(self.interval_scale.get())
             if self.scheduled_job != None:
@@ -315,6 +263,64 @@ class WS:
         self.winddirection_text.grid(row=10, column=1)
         self.windspeed_text.grid(row=11, column=1)
         self.windgusts_text.grid(row=12, column=1)
+    
+    def show_history(self):
+        self.chartWindow = Toplevel(self.master)
+        self.chartWindow.title("Archived Data")
+        pullDataTemp = {}
+        pullDataAirPressure = {}
+        pullDataRain = {}
+        pullDataSun = {}
+        pullDataWind = {}
+
+        def callback(*args):
+            records = self.file.read_data(selectedRegion.get())
+            if records == None:   
+                print("No available archieves")
+                return
+            for record in records:
+                pullDataTemp[record.timeStamp] = record.temperature
+                pullDataAirPressure[record.timeStamp] = record.airPressure
+                pullDataRain[record.timeStamp] = record.rainLastHour
+                pullDataSun[record.timeStamp] = record.sunPower
+                pullDataWind[record.timeStamp] = record.windSpeed
+            self.history_temp_chart.clear()
+            self.history_air_chart.clear()
+            self.history_rain_chart.clear()
+            self.history_sun_chart.clear()
+            self.history_wind_chart.clear()
+            self.history_temp_chart.plot(list(pullDataTemp.keys()), list(pullDataTemp.values()))
+            self.history_air_chart.plot(
+                list(pullDataAirPressure.keys()), list(pullDataAirPressure.values())
+            )
+            self.history_rain_chart.plot(list(pullDataRain.keys()), list(pullDataRain.values()))
+            self.history_sun_chart.plot(
+                list(pullDataSun.keys()), list(pullDataSun.values())
+            )
+            self.history_wind_chart.plot(list(pullDataWind.keys()), list(pullDataWind.values()))
+            canvas.draw()
+
+        selectedRegion = StringVar(self.chartWindow)
+        selectedRegion.set("Choose a location")
+        selectedRegion.trace("w", callback)
+        dropDownHistory = ttk.Combobox(
+            master=self.chartWindow, textvariable=selectedRegion, values=self.regions, font=("Helvetica", 16)
+        )
+        dropDownHistory.pack()
+
+        self.history_figure = Figure(dpi=100)
+        self.history_temp_chart = self.history_figure.add_subplot(421)
+        self.history_air_chart = self.history_figure.add_subplot(422)
+        self.history_rain_chart = self.history_figure.add_subplot(423)
+        self.history_sun_chart = self.history_figure.add_subplot(424)
+        self.history_wind_chart = self.history_figure.add_subplot(425)
+        canvas = FigureCanvasTkAgg(self.history_figure, master=self.chartWindow)
+
+        canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+
+        toolbar = NavigationToolbar2Tk(canvas, self.chartWindow)
+        toolbar.update()
+        toolbar.pack(fill=BOTH, expand=True)
 
     def set_overview_variables(self, warmest, coldest, sunniest, leastwindy, mostwindy):
         self.warmest_text["text"] = warmest
@@ -327,7 +333,7 @@ class WS:
         self, description, visibility, temp, airpressure, sunpower, rain, winddirection, windspeed, windgusts
     ):
         self.description_text["text"] = description
-        self.visibility_text["text"] = "{} km".format(visibility/1000)
+        self.visibility_text["text"] = "{} km".format(int(visibility)/1000) if visibility != "N/A" else "{} km".format(visibility)
         self.temperature_text["text"] = "{} °C".format(temp)
         self.airpressure_text["text"] = "{} hPa".format(airpressure)
         self.sunpower_text["text"] = "{} W/m²".format(sunpower)
